@@ -4,7 +4,7 @@ import java.util.*;
 
 public class ThreadPool{
 
-    private String name;
+    private final String name;
     private final Queue<Runnable> queue;
     private final List<TaskThread> threadList;
     private int size;
@@ -68,6 +68,7 @@ public class ThreadPool{
             }
         }
         threadList.clear();
+        size = 0;
         System.out.println("All threads are destroyed");
         System.out.println(threadList);
     }

@@ -8,7 +8,7 @@ import java.util.*;
 
 public class SortTask extends Task<List<Integer>, String>{
 
-    private List<Integer> list;
+    private final List<Integer> list;
 
     public SortTask(List<Integer> list, BufferedReader br, PrintWriter pw) {
         super(list, br, pw);

@@ -17,6 +17,7 @@ public class SortTask extends Task<List<Integer>, String>{
 
     public SortTask(){
         super(new ArrayList<>());
+        this.list = new ArrayList<>();
     }
 
     public List<Integer> convertToList(List<Integer> rawList){
@@ -33,7 +34,7 @@ public class SortTask extends Task<List<Integer>, String>{
             try{
                 pw.println("Please enter a number or enter \"quit\" to stop");
                 String message = br.readLine();
-                if(message.equals("quit")){
+                if(message == null || message.equals("quit")){
                     break;
                 }
                 int number = Integer.parseInt(message);

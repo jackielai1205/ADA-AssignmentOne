@@ -38,7 +38,7 @@ public class ServerApplication {
                 Socket incomeSocket = serverSocket.accept();
                 System.out.println(incomeSocket.getInetAddress() + " connected");
                 socketList.add(incomeSocket);
-                TaskHandler taskHandler = new TaskHandler(incomeSocket, entryThread, taskThread);
+                TaskHandler taskHandler = new TaskHandler(incomeSocket, taskThread);
                 boolean available = this.entryThread.perform(taskHandler);
                 if(!available){
                     PrintWriter pw = configOutputStream(incomeSocket);
@@ -61,12 +61,10 @@ public class ServerApplication {
     class TaskHandler implements Runnable{
 
         private final Socket socket;
-        private final ThreadPool entryThread;
         private final ThreadPool taskThread;
 
-        public TaskHandler(Socket socket, ThreadPool entryThread, ThreadPool taskThread) {
+        public TaskHandler(Socket socket, ThreadPool taskThread) {
             this.socket = socket;
-            this.entryThread = entryThread;
             this.taskThread = taskThread;
         }
 
@@ -74,14 +72,18 @@ public class ServerApplication {
             pw.println("Awaiting input");
             pw.println("1) Sort list");
             pw.println("2) Sum list");
+            pw.println("3) Calculate exponents");
             pw.println("5) Quit");
             pw.println("============");
         }
 
-        public int receiveInput(BufferedReader br, PrintWriter pw){
+        public int receiveInput(BufferedReader br, PrintWriter pw) throws NullPointerException{
             int input;
             try{
                 String message = br.readLine();
+                if(message == null){
+                    throw new NullPointerException();
+                }
                 input = Integer.parseInt(message);
             }catch (NumberFormatException | IOException e){
                 pw.println("Invalid Input. Please try again...");
@@ -99,36 +101,16 @@ public class ServerApplication {
                 int clientInput = this.receiveInput(br, pw);
                 switch (clientInput) {
                     case 1 -> {
-                        SortTask sortTask = (SortTask) TaskFactory.getTask(TaskType.SORT_TASK);
-                        sortTask.configuration(br, pw);
-                        sortTask.addListener(new TaskObserver<>() {
-                            @Override
-                            public void inform(String progress) {
-                                try {
-                                    PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-                                    pw.println(progress);
-                                } catch (IOException e) {
-                                    System.out.println("Something went wrong");
-                                }
-                            }
-                        });
-                        taskThread.perform(sortTask);
+                        Task<List<Integer>, String> sortTask = TaskFactory.getTask(TaskType.SORT_TASK);
+                        runTask(sortTask, br, pw, socket);
                     }
                     case 2 -> {
-                        SumTask sumTask = (SumTask) TaskFactory.getTask(TaskType.SUM_TASK);
-                        sumTask.configuration(br, pw);
-                        sumTask.addListener(new TaskObserver<String>() {
-                            @Override
-                            public void inform(String progress) {
-                                try {
-                                    PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-                                    pw.println(progress);
-                                } catch (IOException e) {
-                                    System.out.println("Something went wrong");
-                                }
-                            }
-                        });
-                        taskThread.perform(sumTask);
+                        Task<List<Integer>, String> sumTask = TaskFactory.getTask(TaskType.SUM_TASK);
+                        runTask(sumTask, br, pw, socket);
+                    }
+                    case 3 ->{
+                        Task<List<Integer>, String> powerTask = TaskFactory.getTask(TaskType.POWER_TASK);
+                        runTask(powerTask, br, pw, socket);
                     }
                     case 5 -> {
                         pw.println("Good bye");
@@ -140,12 +122,26 @@ public class ServerApplication {
                 System.out.println(socket.getInetAddress() + " left...");
                 closeSocket(socket);
             }
-//            finally {
-//                System.out.println(socket.getInetAddress() + " left...");
-//                closeSocket(socket);
-//            }
+        }
+
+        public void runTask(Task<List<Integer>, String> task, BufferedReader br, PrintWriter pw, Socket socket){
+            task.configuration(br, pw);
+            task.addListener(new TaskObserver<String>() {
+                @Override
+                public void inform(String progress) {
+                    try {
+                        PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                        pw.println(progress);
+                    } catch (IOException e) {
+                        System.out.println("Something went wrong");
+                    }
+                }
+            });
+            taskThread.perform(task);
         }
     }
+
+
 
     public void closeSocket(Socket socket){
         try {

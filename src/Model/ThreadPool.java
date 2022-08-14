@@ -40,7 +40,6 @@ public class ThreadPool{
     }
 
     public void resize(int newSize){
-
         if(newSize == this.size){
             return;
         }
@@ -62,7 +61,15 @@ public class ThreadPool{
     }
 
     public void destroyPool(){
-
+        isBlocked = true;
+        for(TaskThread thread: threadList){
+            while(thread.getTempTask().isRunning){
+                System.out.println(thread + " is running");
+            }
+        }
+        threadList.clear();
+        System.out.println("All threads are destroyed");
+        System.out.println(threadList);
     }
 
     public boolean perform(Runnable task){

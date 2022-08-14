@@ -1,4 +1,4 @@
-import Model.Task.ThreadPool;
+import Model.ThreadPool;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,7 +16,7 @@ public class ChatServer {
     public final ThreadPool threadPool;
 
     public ChatServer() {
-        this.threadPool = new ThreadPool(2);
+        this.threadPool = new ThreadPool(2, "");
     }
 
     public static void main(String[] args){

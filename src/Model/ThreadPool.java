@@ -1,14 +1,17 @@
-package Model.Task;
+package Model;
 
 import java.util.*;
 
 public class ThreadPool{
 
+    private String name;
     private final Queue<Runnable> queue;
     private final List<TaskThread> threadList;
     private int size;
+    private boolean isBlocked;
 
-    public ThreadPool(int initialSize) {
+    public ThreadPool(int initialSize, String name) {
+        this.name = name;
         this.size = initialSize;
         this.threadList = new ArrayList<>();
         for(int x = 0; x < size; x++){
@@ -18,6 +21,7 @@ public class ThreadPool{
             thread.start();
         }
         this.queue = new ArrayDeque<>();
+        isBlocked = false;
     }
 
     public int getSize(){
@@ -25,22 +29,36 @@ public class ThreadPool{
     }
 
     public int getAvailable(){
-        for(TaskThread thread : threadList){
-            if(thread.getTempTask().getAvailable()){
-                return thread.getThreadId();
+        if(!isBlocked){
+            for(TaskThread thread : threadList){
+                if(thread.getTempTask().getAvailable()){
+                    return thread.getThreadId();
+                }
             }
         }
         return -1;
     }
 
     public void resize(int newSize){
-        if(newSize <= this.size){
+
+        if(newSize == this.size){
             return;
         }
-        for(int x = this.size; x < newSize; x++){
-            threadList.add(new TaskThread(x, new TempTask(this)));
+        isBlocked = true;
+        for(TaskThread thread : threadList){
+            while(!thread.getTempTask().getAvailable()){
+
+            }
         }
-        this.size = newSize;
+        if(newSize < this.size){
+            threadList.subList(newSize, this.size).clear();
+        }else if(newSize > this.size){
+            for(int x = this.size; x < newSize; x++){
+                threadList.add(new TaskThread(x, new TempTask(null)));
+            }
+        }
+        this.size =  newSize;
+        isBlocked = false;
     }
 
     public void destroyPool(){
@@ -48,9 +66,8 @@ public class ThreadPool{
     }
 
     public boolean perform(Runnable task){
-        System.out.println(task);
         int available = this.getAvailable();
-        System.out.println(available);
+        System.out.println("Assigned thread " + available + " from " + name);
         if(available == -1){
             this.queue.add(task);
             return false;
@@ -132,9 +149,11 @@ public class ThreadPool{
         }
 
         public void setTask(Runnable task) {
-            synchronized (this){
-                this.task = task;
-                this.notify();
+            if(!isBlocked){
+                synchronized (this){
+                    this.task = task;
+                    this.notify();
+                }
             }
         }
     }
